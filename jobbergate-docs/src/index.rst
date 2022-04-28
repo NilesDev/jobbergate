@@ -15,3 +15,4 @@ Table of Contents
    Overview <overview>
    Usage <usage>
    Jobbergate.yaml <jobbergate_yaml>
+   Local Development <local-development>
