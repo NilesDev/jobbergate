@@ -53,7 +53,7 @@ def create_job_submission(
         JobSubmissionResponse,
         make_request(
             jg_ctx.client,
-            "/job-submissions",
+            "/jobbergate/job-submissions",
             "POST",
             expected_status=201,
             abort_message="Couldn't create job submission",
@@ -79,7 +79,7 @@ def fetch_job_submission_data(
         JobSubmissionResponse,
         make_request(
             jg_ctx.client,
-            f"/job-submissions/{job_submission_id}",
+            f"/jobbergate/job-submissions/{job_submission_id}",
             "GET",
             expected_status=200,
             abort_message=f"Couldn't retrieve job submission {job_submission_id} from API",

@@ -8,7 +8,7 @@ from typer import Context, Typer
 from typer.testing import CliRunner
 
 from jobbergate_cli.constants import JOBBERGATE_APPLICATION_CONFIG_FILE_NAME, JOBBERGATE_APPLICATION_MODULE_FILE_NAME
-from jobbergate_cli.schemas import IdentityData, JobbergateApplicationConfig, JobbergateContext, Persona, TokenSet
+from jobbergate_cli.schemas import JobbergateApplicationConfig, JobbergateContext, Persona, TokenSet
 from jobbergate_cli.subapps.applications.tools import load_application_from_source
 from jobbergate_cli.text_tools import dedent
 
@@ -47,13 +47,10 @@ def dummy_context(dummy_domain):
 
 @pytest.fixture
 def attach_persona(dummy_context):
-    def _helper(user_email: str, org_name: str = "dumb-org", access_token: str = "foo"):
+    def _helper(user_email: str, access_token: str = "foo"):
         dummy_context.persona = Persona(
             token_set=TokenSet(access_token=access_token),
-            identity_data=IdentityData(
-                user_email=user_email,
-                org_name=org_name,
-            ),
+            user_email=user_email,
         )
 
     return _helper

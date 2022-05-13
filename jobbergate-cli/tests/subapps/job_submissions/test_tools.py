@@ -20,7 +20,7 @@ def test_create_job_submission__success(
 
     job_script_id = job_submission_data["job_script_id"]
 
-    create_job_submission_route = respx_mock.post(f"{dummy_domain}/job-submissions")
+    create_job_submission_route = respx_mock.post(f"{dummy_domain}/jobbergate/job-submissions")
     create_job_submission_route.mock(
         return_value=httpx.Response(
             httpx.codes.CREATED,
@@ -52,7 +52,7 @@ def test_create_job_submission__with_execution_dir(
 
     job_script_id = job_submission_data["job_script_id"]
 
-    create_job_submission_route = respx_mock.post(f"{dummy_domain}/job-submissions")
+    create_job_submission_route = respx_mock.post(f"{dummy_domain}/jobbergate/job-submissions")
     create_job_submission_route.mock(
         return_value=httpx.Response(
             httpx.codes.CREATED,
@@ -106,7 +106,7 @@ def test_create_job_submission__with_cluster_id(
 
     job_script_id = job_submission_data["job_script_id"]
 
-    create_job_submission_route = respx_mock.post(f"{dummy_domain}/job-submissions")
+    create_job_submission_route = respx_mock.post(f"{dummy_domain}/jobbergate/job-submissions")
     create_job_submission_route.mock(
         return_value=httpx.Response(
             httpx.codes.CREATED,
@@ -145,7 +145,7 @@ def test_fetch_job_submission_data__success__using_id(
 ):
     job_submission_data = dummy_job_submission_data[0]
     job_submission_id = job_submission_data["id"]
-    fetch_route = respx_mock.get(f"{dummy_domain}/job-submissions/{job_submission_id}")
+    fetch_route = respx_mock.get(f"{dummy_domain}/jobbergate/job-submissions/{job_submission_id}")
     fetch_route.mock(
         return_value=httpx.Response(
             httpx.codes.OK,

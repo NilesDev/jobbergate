@@ -113,7 +113,7 @@ def list_all(
         ListResponseEnvelope,
         make_request(
             jg_ctx.client,
-            "/job-submissions",
+            "/jobbergate/job-submissions",
             "GET",
             expected_status=200,
             abort_message="Couldn't retrieve job submissions list from API",
@@ -172,7 +172,7 @@ def delete(
 
     make_request(
         jg_ctx.client,
-        f"/job-submissions/{id}",
+        f"/jobbergate/job-submissions/{id}",
         "DELETE",
         expected_status=204,
         abort_message="Request to delete job submission was not accepted by the API",

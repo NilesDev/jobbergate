@@ -19,23 +19,14 @@ class TokenSet(pydantic.BaseModel, extra=pydantic.Extra.ignore):
     refresh_token: Optional[str] = None
 
 
-class IdentityData(pydantic.BaseModel):
-    """
-    A model representing the fields that should appear in our custom identity data claim.
-    """
-
-    user_email: str
-    org_name: Optional[str]
-
-
 class Persona(pydantic.BaseModel):
     """
-    A model representing a pairing of a TokenSet and Identity data.
+    A model representing a pairing of a TokenSet and user email.
     This is a convenience to combine all of the identifying data and credentials for a given user.
     """
 
     token_set: TokenSet
-    identity_data: IdentityData
+    user_email: str
 
 
 class DeviceCodeData(pydantic.BaseModel, extra=pydantic.Extra.ignore):
