@@ -2,11 +2,16 @@
 Utilities for finding out clusters that are available
 """
 
-from typing import List, Dict, cast
+import json
+from datetime import datetime
+from typing import List, Dict, Optional, cast
+
+from loguru import logger
 
 from jobbergate_cli.exceptions import Abort
-from jobbergate_cli.schemas import JobbergateContext
+from jobbergate_cli.schemas import JobbergateContext, ClusterCacheData
 from jobbergate_cli.requests import make_request
+from jobbergate_cli.config import settings
 
 def pull_cluster_names_from_api(ctx: JobbergateContext) -> List[str]:
     assert ctx.client is not None
@@ -39,3 +44,35 @@ def pull_cluster_names_from_api(ctx: JobbergateContext) -> List[str]:
             log_message=f"Failed to unpack data from cluster-api: {response_data}",
         )
     return cluster_names
+
+
+def save_clusters_to_cache(cluster_names: List[str]):
+
+    # Make static type checkers happy
+    assert settings.JOBBERGATE_CLUSTER_LIST_PATH is not None
+
+    cache_data = ClusterCacheData(
+        updated_at=datetime.utcnow(),
+        cluster_names=cluster_names,
+    )
+
+    logger.debug(f"Caching cluster info at {settings.JOBBERGATE_CLUSTER_LIST_PATH}")
+    settings.JOBBERGATE_CLUSTER_LIST_PATH.write_text(cache_data.json())
+
+
+def load_clusters_from_cache() -> Optional[List[str]]:
+
+    # Make static type checkers happy
+    assert settings.JOBBERGATE_CLUSTER_LIST_PATH is not None
+
+    try:
+        cache_data = ClusterCacheData(**json.loads(settings.JOBBERGATE_CLUSTER_LIST_PATH.read_text()))
+    except Exception as err:
+        logger.warning(f"Couldn't load cluster data from cache: {err}")
+        return None
+
+    if datetime.utcnow().timestamp() - cache_data.updated_at.timestamp() > settings.JOBBERGATE_CLUSTER_CACHE_LIFETIME:
+        logger.warning("Cached cluster data is expired")
+        return None
+
+    return cache_data.cluster_names

@@ -168,6 +168,15 @@ class ListResponseEnvelope(pydantic.BaseModel):
     pagination: Pagination
 
 
+class ClusterCacheData(pydantic.BaseModel):
+    """
+    Describes the format of data stored in the clusters cache file.
+    """
+
+    updated_at: datetime
+    cluster_names: List[str]
+
+
 class ForeignKeyError(pydantic.BaseModel):
     """
     A model describing the structure of a foreign-key constraint error on delete.

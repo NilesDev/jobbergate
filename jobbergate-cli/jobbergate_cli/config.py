@@ -30,6 +30,9 @@ class Settings(BaseSettings):
     SENTRY_DSN: Optional[str]
     SENTRY_TRACE_RATE: float = Field(1.0, gt=0.0, le=1.0)
 
+    # How long it will use cached cluster lists before fetching them again
+    JOBBERGATE_CLUSTER_CACHE_LIFETIME: int = 60 * 5
+
     # Settings for log uploads
     JOBBERGATE_AWS_ACCESS_KEY_ID: Optional[str]
     JOBBERGATE_AWS_SECRET_ACCESS_KEY: Optional[str]
@@ -42,6 +45,8 @@ class Settings(BaseSettings):
     JOBBERGATE_USER_TOKEN_DIR: Optional[Path]
     JOBBERGATE_ACCESS_TOKEN_PATH: Optional[Path]
     JOBBERGATE_REFRESH_TOKEN_PATH: Optional[Path]
+
+    JOBBERGATE_CLUSTER_LIST_PATH: Optional[Path]
 
     # Compatibility mode: If True, add commands as they appear in the legacy app
     JOBBERGATE_COMPATIBILITY_MODE: Optional[bool] = False
@@ -74,6 +79,8 @@ class Settings(BaseSettings):
         values["JOBBERGATE_USER_TOKEN_DIR"] = token_dir
         values["JOBBERGATE_ACCESS_TOKEN_PATH"] = token_dir / "access.token"
         values["JOBBERGATE_REFRESH_TOKEN_PATH"] = token_dir / "refresh.token"
+
+        values["JOBBERGATE_CLUSTER_LIST_PATH"] = cache_dir / "clusters.json"
 
         values.setdefault("OIDC_LOGIN_DOMAIN", values["OIDC_DOMAIN"])
 
