@@ -7,10 +7,11 @@ from datetime import datetime
 
 from jobbergate_cli.schemas import JobbergateContext, ClusterCacheData
 from jobbergate_cli.exceptions import Abort
-from jobbergate_cli.clusters import (
+from jobbergate_cli.subapps.clusters.tools import (
     pull_cluster_names_from_api,
     save_clusters_to_cache,
     load_clusters_from_cache,
+    get_cluster_names,
 )
 from jobbergate_cli.config import settings
 
@@ -46,6 +47,31 @@ def test_pull_cluster_names_from_api__success(respx_mock, dummy_domain, dummy_co
     )
 
     assert pull_cluster_names_from_api(dummy_context) == ["cluster1", "cluster2", "cluster3"]
+
+
+def test_pull_cluster_names_from_api__raises_abort_on_non_200(respx_mock, dummy_domain, dummy_context):
+    clusters_route = respx_mock.post(f"{dummy_domain}/cluster/graphql/query")
+    clusters_route.mock(
+        return_value=httpx.Response(
+            httpx.codes.BAD_REQUEST,
+        ),
+    )
+
+    with pytest.raises(Abort, match="There was a problem retrieving registered clusters"):
+        pull_cluster_names_from_api(dummy_context)
+
+
+def test_pull_cluster_names_from_api__raises_abort_on_malformed_response(respx_mock, dummy_domain, dummy_context):
+    clusters_route = respx_mock.post(f"{dummy_domain}/cluster/graphql/query")
+    clusters_route.mock(
+        return_value=httpx.Response(
+            httpx.codes.OK,
+            json=dict(bad="data"),
+        ),
+    )
+
+    with pytest.raises(Abort, match="Couldn't unpack cluster names"):
+        pull_cluster_names_from_api(dummy_context)
 
 
 def test_save_clusters_to_cache(tmp_path, tweak_settings):
@@ -91,3 +117,57 @@ def test_load_clusters_from_cache__returns_None_if_cache_is_invalid(tmp_path, tw
     with tweak_settings(JOBBERGATE_CLUSTER_LIST_PATH=cluster_cache_path, JOBBERGATE_CLUSTER_CACHE_LIFETIME=5):
         cluster_cache_path.write_text("BAD DATA")
         assert load_clusters_from_cache() is None
+
+
+def test_get_cluster_names__pulls_from_api_if_no_cache_available(tmp_path, mocker, respx_mock, dummy_domain, dummy_context, tweak_settings):
+    """
+
+    Also assert that a new cache file was created.
+    """
+    mocker.patch("jobbergate_cli.subapps.clusters.tools.load_clusters_from_cache", return_value=None)
+    clusters_route = respx_mock.post(f"{dummy_domain}/cluster/graphql/query")
+    clusters_route.mock(
+        return_value=httpx.Response(
+            httpx.codes.OK,
+            json=dict(
+                data=dict(
+                    cluster=[
+                        dict(clientId="cluster1"),
+                        dict(clientId="cluster2"),
+                        dict(clientId="cluster3"),
+                    ],
+                ),
+            ),
+        ),
+    )
+
+    dummy_cache_path = tmp_path / "cluster-names.json"
+    with tweak_settings(JOBBERGATE_CLUSTER_LIST_PATH=dummy_cache_path):
+        with plummet.frozen_time("2022-05-16 15:38:00"):
+            assert get_cluster_names(dummy_context) == ["cluster1", "cluster2", "cluster3"]
+    assert clusters_route.called
+    cached_data = json.loads(dummy_cache_path.read_text())
+    assert cached_data["cluster_names"] == ["cluster1", "cluster2", "cluster3"]
+    assert plummet.moments_match(cached_data["updated_at"], "2022-05-16 15:38:00")
+
+
+def test_get_cluster_names__loads_from_cache_when_available(mocker, respx_mock, dummy_domain, dummy_context):
+    mocker.patch("jobbergate_cli.subapps.clusters.tools.load_clusters_from_cache", return_value=None)
+    clusters_route = respx_mock.post(f"{dummy_domain}/cluster/graphql/query")
+    clusters_route.mock(
+        return_value=httpx.Response(
+            httpx.codes.OK,
+            json=dict(
+                data=dict(
+                    cluster=[
+                        dict(clientId="cluster1"),
+                        dict(clientId="cluster2"),
+                        dict(clientId="cluster3"),
+                    ],
+                ),
+            ),
+        ),
+    )
+
+    assert get_cluster_names(dummy_context) == ["cluster1", "cluster2", "cluster3"]
+    assert clusters_route.called

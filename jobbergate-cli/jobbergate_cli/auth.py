@@ -8,22 +8,24 @@ from typing import Dict, Optional, cast
 from jose import jwt
 from jose.exceptions import ExpiredSignatureError
 from loguru import logger
+from pydantic import ValidationError
 
 from jobbergate_cli.config import settings
 from jobbergate_cli.exceptions import Abort, JobbergateCliError
 from jobbergate_cli.render import terminal_message
 from jobbergate_cli.requests import make_request
-from jobbergate_cli.schemas import DeviceCodeData, JobbergateContext, Persona, TokenSet
+from jobbergate_cli.schemas import DeviceCodeData, JobbergateContext, Persona, TokenSet, IdentityData
 from jobbergate_cli.text_tools import unwrap
 from jobbergate_cli.time_loop import TimeLoop
 
 
-def validate_token_and_extract_email(token_set: TokenSet) -> str:
+def validate_token_and_extract_identity(token_set: TokenSet) -> IdentityData:
     """
-    Validate the access_token from a TokenSet and extract the user email.
+    Validate the access_token from a TokenSet and extract the user's identity data.
 
     Validations:
         * Checks timestamp on the access token.
+        * Checks that the client_id is present
         * Checks that email is present
 
     Reports an error in the logs and to the user if there is an issue with the access_token
@@ -55,17 +57,25 @@ def validate_token_and_extract_email(token_set: TokenSet) -> str:
             original_error=err,
         )
 
-    logger.debug("Extracting user email from the access token")
-    user_email = token_data.get("email")
-    Abort.require_condition(
-        user_email,
-        "No user email found in access token data",
-        raise_kwargs=dict(
-            subject="No user email found",
+    logger.debug("Extracting identity data from the access token")
+    try:
+        identity = IdentityData(
+            user_email=token_data.get("email"),
+            client_id=token_data.get("azp"),
+        )
+    except ValidationError as err:
+        raise Abort(
+            """
+            There was an error extracting the user's identity from the access token.
+
+            Please try logging in again.
+            """,
+            subject="Missing user data",
             support=True,
-        ),
-    )
-    return user_email
+            log_message=f"Token data could not be extracted to identity: {err}",
+            original_error=err,
+        )
+    return identity
 
 
 def load_tokens_from_cache() -> TokenSet:
@@ -143,7 +153,7 @@ def init_persona(ctx: JobbergateContext, token_set: Optional[TokenSet] = None):
         token_set = load_tokens_from_cache()
 
     try:
-        user_email = validate_token_and_extract_email(token_set)
+        identity_data = validate_token_and_extract_identity(token_set)
     except ExpiredSignatureError:
         Abort.require_condition(
             token_set.refresh_token is not None,
@@ -156,15 +166,15 @@ def init_persona(ctx: JobbergateContext, token_set: Optional[TokenSet] = None):
 
         logger.debug("The access token is expired. Attempting to refresh token")
         refresh_access_token(ctx, token_set)
-        user_email = validate_token_and_extract_email(token_set)
+        identity_data = validate_token_and_extract_identity(token_set)
 
-    logger.debug(f"Persona created with user email: {user_email}")
+    logger.debug(f"Persona created with identity_data: {identity_data}")
 
     save_tokens_to_cache(token_set)
 
     return Persona(
         token_set=token_set,
-        user_email=user_email,
+        identity_data=identity_data,
     )
 
 

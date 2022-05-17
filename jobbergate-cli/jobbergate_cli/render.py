@@ -144,6 +144,44 @@ def render_list_results(
         console.print()
 
 
+def render_plain_list(
+    ctx: JobbergateContext,
+    items: List[Any],
+    style_mapper: Optional[StyleMapper] = None,
+    title: str = "Items",
+):
+    """
+    Render a list of result data items in a ``rich`` ``Table``.
+
+    :param: ctx:           The JobbergateContext. This is needed to detect if ``full`` or ``raw`` output is needed
+    :param: envelope:      A ListResponseEnvelope containing the data items
+    :param: style_mapper:  The style mapper that should be used to apply styles to the columns of the table
+    :param: hidden_fields: Columns that should (if not using ``full`` mode) be hidden in the ``Table`` output
+    :param: title:         The title header to include above the ``Table`` output
+    """
+    item_count = len(items)
+    if item_count == 0:
+        terminal_message("There are no results to display", subject="Nothing here...")
+        return
+
+    if ctx.raw_output:
+        render_json(items)
+    else:
+        table = Table(title=title, caption=f"Total items: {item_count}")
+        if style_mapper is None:
+            style_mapper = StyleMapper()
+        for key in first_row.keys():
+            table.add_column(key, **style_mapper.map_style(key))
+
+        for row in filtered_results:
+            table.add_row(*[str(v) for v in row.values()])
+
+        console = Console()
+        console.print()
+        console.print(table)
+        console.print()
+
+
 def render_dict(
     data: Dict[str, Any],
     title: str = "Data",

@@ -19,6 +19,14 @@ class TokenSet(pydantic.BaseModel, extra=pydantic.Extra.ignore):
     refresh_token: Optional[str] = None
 
 
+class IdentityData(pydantic.BaseModel):
+    """
+    A model representing the identifying data for a user from an auth token.
+    """
+    user_email: str
+    client_id: str
+
+
 class Persona(pydantic.BaseModel):
     """
     A model representing a pairing of a TokenSet and user email.
@@ -26,12 +34,12 @@ class Persona(pydantic.BaseModel):
     """
 
     token_set: TokenSet
-    user_email: str
+    identity_data: IdentityData
 
 
 class DeviceCodeData(pydantic.BaseModel, extra=pydantic.Extra.ignore):
     """
-    A model representing the data that is returned from Auth0's device code endpoint.
+    A model representing the data that is returned from the OIDC provider's device code endpoint.
     """
 
     device_code: str
@@ -116,6 +124,7 @@ class JobSubmissionResponse(pydantic.BaseModel, extra=pydantic.Extra.ignore):
 
     id: int
     job_script_id: int
+    client_id: Optional[str]
     slurm_job_id: Optional[int]
     execution_directory: Optional[Path]
     job_submission_name: str
@@ -145,7 +154,7 @@ class JobSubmissionCreateRequestData(pydantic.BaseModel):
     job_submission_name: str
     job_submission_description: Optional[str] = None
     job_script_id: int
-    cluster_id: Optional[str] = None
+    client_id: Optional[str] = None
     execution_directory: Optional[Path] = None
 
 

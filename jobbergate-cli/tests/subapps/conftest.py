@@ -8,7 +8,7 @@ from typer import Context, Typer
 from typer.testing import CliRunner
 
 from jobbergate_cli.constants import JOBBERGATE_APPLICATION_CONFIG_FILE_NAME, JOBBERGATE_APPLICATION_MODULE_FILE_NAME
-from jobbergate_cli.schemas import JobbergateApplicationConfig, JobbergateContext, Persona, TokenSet
+from jobbergate_cli.schemas import JobbergateApplicationConfig, JobbergateContext, Persona, TokenSet, IdentityData
 from jobbergate_cli.subapps.applications.tools import load_application_from_source
 from jobbergate_cli.text_tools import dedent
 
@@ -47,13 +47,24 @@ def dummy_context(dummy_domain):
 
 @pytest.fixture
 def attach_persona(dummy_context):
-    def _helper(user_email: str, access_token: str = "foo"):
+    def _helper(user_email: str, client_id: str = "dummy-client", access_token: str = "foo"):
         dummy_context.persona = Persona(
             token_set=TokenSet(access_token=access_token),
-            user_email=user_email,
+            identity_data=IdentityData(
+                client_id=client_id,
+                user_email=user_email,
+            ),
         )
 
     return _helper
+
+
+@pytest.fixture
+def seed_clusters(mocker):
+    def _helper(*client_ids):
+        mocker.patch("jobbergate_cli.subapps.clusters.tools.pull_cluster_names_from_api", return_value=client_ids)
+
+    yield _helper
 
 
 @pytest.fixture

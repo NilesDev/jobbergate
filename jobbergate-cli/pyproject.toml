@@ -58,6 +58,7 @@ addopts = [
 env = [
     "ARMADA_API_BASE = https://some-pretend-armada-url.com",
     "JOBBERGATE_DEBUG = false",
+    "JOBBERGATE_CACHE_DIR = /tmp/jobbergate-cache",
     "OIDC_DOMAIN = dummy_auth_domain.com",
     "OIDC_AUDIENCE = https://dummy_auth_audience.com",
     "OIDC_CLIENT_ID = dummy_client_id",

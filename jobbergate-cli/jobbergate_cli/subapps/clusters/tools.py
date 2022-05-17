@@ -1,5 +1,5 @@
 """
-Utilities for finding out clusters that are available
+Provide tool functions for working with Cluster data
 """
 
 import json
@@ -12,6 +12,7 @@ from jobbergate_cli.exceptions import Abort
 from jobbergate_cli.schemas import JobbergateContext, ClusterCacheData
 from jobbergate_cli.requests import make_request
 from jobbergate_cli.config import settings
+from jobbergate_cli.text_tools import conjoin
 
 def pull_cluster_names_from_api(ctx: JobbergateContext) -> List[str]:
     assert ctx.client is not None
@@ -76,3 +77,34 @@ def load_clusters_from_cache() -> Optional[List[str]]:
         return None
 
     return cache_data.cluster_names
+
+
+def get_cluster_names(ctx: JobbergateContext) -> List[str]:
+    assert ctx.client is not None
+
+    cluster_names = load_clusters_from_cache()
+    if cluster_names is None:
+        cluster_names = pull_cluster_names_from_api(ctx)
+        save_clusters_to_cache(cluster_names)
+    print("CLUSTER NAMES: ", cluster_names)
+
+    return cluster_names
+
+
+def validate_cluster_name(ctx: JobbergateContext, cluster_name: str):
+    cluster_names = get_cluster_names(ctx)
+    Abort.require_condition(
+        cluster_name in cluster_names,
+        conjoin(
+            """
+            The supplied cluster name was not found in the list of available clusters.
+
+            Please select one of:
+            """,
+            *cluster_names,
+        ),
+        raise_kwargs=dict(
+            subject="Invalid cluster name",
+            support=True,
+        ),
+    )
